@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moona | Cozy Space</title>
+    <style>
+        :root {
+            --primary-brown: #6f4e37;
+            --soft-pink: #ffb7b2;
+            --bg-cream: #fffaf6;
+            --accent-pink: #ff8b94;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--primary-brown);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .moon-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--primary-brown);
+            border-radius: 50%;
+            box-shadow: inset -15px 0 0 4px var(--soft-pink);
+            margin-bottom: 15px;
+            transform: rotate(-20deg);
+        }
+
+        #home-view {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            min-height: 80vh;
+        }
+
+        h1 { font-size: 2.8em; margin: 10px 0; }
+        .quote { font-style: italic; color: #a68975; margin-bottom: 30px; padding: 0 20px; }
+
+        .nav-grid { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; }
+        .choice-btn {
+            background-color: white;
+            border: 2px solid var(--soft-pink);
+            padding: 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: 0.2s;
+        }
+
+        #workspace { display: none; width: 100%; max-width: 450px; padding-bottom: 40px; }
+        .panel { display: none; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        input, select, textarea {
+            width: 100%; padding: 15px; margin: 10px 0;
+            border: 2px solid var(--soft-pink); border-radius: 12px;
+            box-sizing: border-box; font-size: 16px;
+        }
+
+        .save-btn {
+            background: var(--primary-brown);
+            color: white; border: none;
+            padding: 18px; border-radius: 12px;
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;
+        }
+
+        .entry-card {
+            background: #fffcfb; padding: 15px;
+            border-radius: 15px; margin-bottom: 15px;
+            border-left: 6px solid var(--soft-pink);
+        }
+    </style>
+</head>
+<body>
+
+    <section id="home-view">
+        <div class="moon-icon"></div>
+        <h1>Moona</h1>
+        <p class="quote">“Better drown in words than sorrows.”</p>
+        <div class="nav-grid">
+            <button class="choice-btn" onclick="showPanel('journal')">✍️ Journal Entry</button>
+            <button class="choice-btn" onclick="showPanel('archives')">📜 Archives</button>
+            <button class="choice-btn" onclick="showPanel('achievements')">🏆 Achievements</button>
+        </div>
+    </section>
+
+    <div id="workspace">
+        <button class="choice-btn" onclick="goHome()" style="margin-bottom: 20px; padding: 10px 20px;">← Back</button>
+
+        <div id="journal" class="panel">
+            <h2>Journal Entry</h2>
+            <input type="date" id="jDate">
+            <select id="moodSelect" onchange="handleMood()">
+                <!-- Moods populated by JS -->
+            </select>
+            <textarea id="jText" rows="5" placeholder="Pour your heart out..."></textarea>
+            <button class="save-btn" onclick="saveData('journal')">Save Memory</button>
+        </div>
+
+        <div id="archives" class="panel">
+            <h2>Archives</h2>
+            <div id="archivesList"></div>
+        </div>
+
+        <div id="achievements" class="panel">
+            <h2>Achievements</h2>
+            <input type="date" id="aDate">
+            <textarea id="aText" rows="3" placeholder="What did you conquer?"></textarea>
+            <button class="save-btn" onclick="saveData('achievements')">Save Achievement</button>
+            <div id="achievementsList" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+<script>
+    // Initialize moods from storage or default
+    let moods = JSON.parse(localStorage.getItem('userMoods')) || ["Happy", "Calm", "Sad"];
+
+    function populateMoods() {
+        const select = document.getElementById('moodSelect');
+        select.innerHTML = moods.map(m => `<option value="${m}">${m}</option>`).join('');
+        select.innerHTML += `<option value="New">+ Add Emotion</option>`;
+    }
+
+    function showPanel(id) {
+        document.getElementById('home-view').style.display = 'none';
+        document.getElementById('workspace').style.display = 'block';
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        populateMoods();
+        render();
+    }
+
+    function goHome() {
+        document.getElementById('home-view').style.display = 'flex';
+        document.getElementById('workspace').style.display = 'none';
+    }
+
+    function handleMood() {
+        const select = document.getElementById('moodSelect');
+        if(select.value === 'New') {
+            let newMood = prompt("Enter your new emotion:");
+            if(newMood && !moods.includes(newMood)) {
+                moods.push(newMood);
+                localStorage.setItem('userMoods', JSON.stringify(moods));
+                populateMoods();
+                select.value = newMood;
+            } else {
+                select.selectedIndex = 0;
+            }
+        }
+    }
+
+    function saveData(type) {
+        if(type === 'journal') {
+            const jDate = document.getElementById('jDate');
+            const jText = document.getElementById('jText');
+            const jMood = document.getElementById('moodSelect');
+            let entry = { date: jDate.value, text: jText.value, mood: jMood.value };
+            let logs = JSON.parse(localStorage.getItem('journalData') || "[]");
+            logs.unshift(entry);
+            localStorage.setItem('journalData', JSON.stringify(logs));
+            jDate.value = ''; jText.value = ''; jMood.selectedIndex = 0;
+        } else {
+            const aDate = document.getElementById('aDate');
+            const aText = document.getElementById('aText');
+            let entry = { date: aDate.value, text: aText.value };
+            let logs = JSON.parse(localStorage.getItem('achieveData') || "[]");
+            logs.unshift(entry);
+            localStorage.setItem('achieveData', JSON.stringify(logs));
+            aDate.value = ''; aText.value = '';
+        }
+        alert("Saved with love! ✨");
+    }
+
+    function render() {
+        let jLogs = JSON.parse(localStorage.getItem('journalData') || "[]");
+        document.getElementById('archivesList').innerHTML = jLogs.map(e => `
+            <div class="entry-card"><strong>📅 ${e.date} | ${e.mood}</strong><p>${e.text}</p></div>
+        `).join('');
+        
+        let aLogs = JSON.parse(localStorage.getItem('achieveData') || "[]");
+        document.getElementById('achievementsList').innerHTML = aLogs.map(e => `
+            <div class="entry-card"><strong>🏆 ${e.date}</strong><p>${e.text}</p></div>
+        `).join('');
+    }
+</script>
+</body>
+</html>
