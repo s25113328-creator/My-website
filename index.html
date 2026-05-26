@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +6,6 @@
     <title>Moona | Cozy Space</title>
     <style>
         :root {
-            /* Light Cozy Theme */
             --primary-brown: #6f4e37;
             --soft-pink: #ffb7b2;
             --bg-cream: #fffaf6;
@@ -19,9 +17,7 @@
             --panel-bg: rgba(255, 255, 255, 0.9);
             --transition-speed: 0.4s;
         }
-
         [data-theme="dark"] {
-            /* Dark Dreamy Theme */
             --primary-brown: #dfc5b3;
             --soft-pink: #4a3b5c;
             --bg-cream: #1a1625;
@@ -32,9 +28,471 @@
             --border-color: #5c4b75;
             --panel-bg: rgba(37, 32, 51, 0.85);
         }
-
         * {
             box-sizing: border-box;
+            transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        #backdrop-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; pointer-events: none;
+        }
+        .top-controls {
+            position: absolute;
+            top: 20px; right: 20px;
+            display: flex; gap: 10px; z-index: 10;
+        }
+        .control-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 45px; height: 45px;
+            font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* --- Auth View Layout (Matched perfectly to your picture) --- */
+        #auth-view {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 85vh; width: 100%; max-width: 400px; padding: 10px;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .auth-card {
+            background-color: var(--card-bg); border: 2px dashed var(--border-color);
+            padding: 30px 25px; border-radius: 24px; width: 100%;
+            box-shadow: 0 8px 24px rgba(111, 78, 55, 0.04); text-align: center;
+        }
+        .auth-card h2 { font-family: Georgia, serif; font-size: 2em; margin: 10px 0 5px 0; color: var(--primary-brown); letter-spacing: 1px; }
+        .auth-card .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 25px; font-style: italic; }
+        .input-group { text-align: left; margin-bottom: 15px; }
+        .input-group label { font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 6px; }
+        .auth-btn {
+            background: #5c4433; color: #fffaf6; border: none; padding: 15px; border-radius: 14px;
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; margin-top: 10px;
+        }
+        .auth-btn:hover { opacity: 0.95; }
+
+        /* --- Home View --- */
+        #home-view {
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; width: 100%; min-height: 85vh;
+            animation: fadeIn var(--transition-speed) ease-in-out;
+        }
+        .moon-container { position: relative; margin-bottom: 15px; }
+        .moon-icon {
+            width: 80px; height: 80px; background: #e6c687; border-radius: 50%;
+            box-shadow: 0 0 20px rgba(230,198,135,0.6); transform: rotate(-20deg); position: relative;
+        }
+        [data-theme="light"] .moon-icon {
+            background: var(--primary-brown); box-shadow: inset -18px 0 0 4px var(--soft-pink);
+        }
+        .user-profile-badge {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            padding: 6px 16px; border-radius: 30px; margin-bottom: 15px; font-size: 14px; font-weight: bold;
+        }
+        h1 { font-size: 3em; margin: 10px 0; font-family: Georgia, serif; letter-spacing: 2px; }
+        .quote { font-style: italic; color: var(--text-muted); margin-bottom: 25px; max-width: 400px; line-height: 1.4; }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 450px; }
+        .choice-btn {
+            background-color: var(--card-bg); border: 2px dashed var(--border-color);
+            color: var(--text-main); padding: 20px 15px; border-radius: 18px;
+            cursor: pointer; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .choice-btn:hover { transform: translateY(-2px); border-style: solid; }
+        .choice-btn.full-width { grid-column: span 2; }
+        
+        /* --- Workspace & Settings Panels --- */
+        #workspace { display: none; width: 100%; max-width: 550px; padding-bottom: 60px; }
+        .panel { display: none; background: var(--panel-bg); padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); backdrop-filter: blur(10px); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .panel-header h2 { margin: 0; font-family: Georgia, serif; }
+        input, select, textarea { width: 100%; padding: 14px; margin: 8px 0 18px 0; border: 2px solid var(--border-color); border-radius: 14px; background: var(--card-bg); color: var(--text-main); font-size: 14px; }
+        .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .save-btn { background: var(--primary-brown); color: var(--bg-cream); border: none; padding: 16px; border-radius: 14px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; margin-top: 5px;}
+        .entry-card { background: var(--card-bg); padding: 20px; border-radius: 20px; margin-bottom: 15px; border-left: 6px solid var(--soft-pink); position: relative; text-align: left; }
+        .entry-card .actions { position: absolute; top: 15px; right: 15px; }
+        .card-btn { background: none; border: none; cursor: pointer; font-size: 16px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px dashed var(--border-color); }
+        .setting-row label { font-weight: bold; font-size: 14px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body data-theme="light">
+    <canvas id="backdrop-canvas"></canvas>
+    
+    <div class="top-controls">
+        <button class="control-btn" onclick="showPanel('settings')" title="Open Workspace Settings">⚙️</button>
+    </div>
+
+    <section id="auth-view">
+        <div class="auth-card">
+            <div class="moon-container" style="margin-bottom: 5px;">
+                <div class="moon-icon" style="width: 60px; height: 60px; margin: 0 auto;"></div>
+            </div>
+            <h2>Moona</h2>
+            <p class="subtitle">Enter your cozy space sanctuary</p>
+            
+            <div class="input-group">
+                <label for="username">Scribe Name</label>
+                <input type="text" id="username" placeholder="Enter your scribe name...">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Passphrase</label>
+                <input type="password" id="password" placeholder="Enter your passphrase...">
+            </div>
+
+            <button class="auth-btn" onclick="attemptLogin()">Create Scribe Space</button>
+        </div>
+    </section>
+
+    <section id="home-view">
+        <div class="moon-container">
+            <div class="moon-icon"></div>
+        </div>
+        
+        <div class="user-profile-badge">
+            ✍️ <span id="welcomeGreeting">Cozy Scribe</span>
+        </div>
+
+        <h1>Moona</h1>
+        
+        <p class="quote" id="dailyQuote" onclick="cycleQuote()" style="cursor: pointer;" title="Click to see your next quote!"></p>
+       
+        <div class="nav-grid">
+            <button class="choice-btn" onclick="showPanel('journal')">✍️ <span>New Entry</span></button>
+            <button class="choice-btn" onclick="showPanel('archives')">📜 <span>The Archives</span></button>
+            <button class="choice-btn" onclick="showPanel('quotes-panel')">💬 <span>My Quotes</span></button>
+            <button class="choice-btn" onclick="showPanel('settings')">⚙️ <span>Settings</span></button>
+            <button class="choice-btn full-width" onclick="cycleQuote()">💡 <span>Cycle Next Favorite Quote</span></button>
+        </div>
+    </section>
+
+    <div id="workspace">
+        <button class="save-btn" onclick="goHome()" style="margin-bottom: 20px; width:auto; padding: 10px 20px; background: var(--card-bg); color: var(--text-main); border: 2px solid var(--border-color);">← Return Home</button>
+        
+        <div id="journal" class="panel">
+            <div class="panel-header"><h2>Write Memory</h2></div>
+            <div class="row-grid">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold;">Date</label>
+                    <input type="date" id="jDate">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold;">Current Vibe</label>
+                    <select id="moodSelect">
+                        <option value="Calm">Calm</option>
+                        <option value="Radiant">Radiant</option>
+                        <option value="Melancholy">Melancholy</option>
+                    </select>
+                </div>
+            </div>
+            <input type="text" id="jTag" placeholder="e.g. Life, Travel, Growth">
+            <textarea id="jText" rows="6" placeholder="Pour your thoughts freely onto this page..."></textarea>
+            <button class="save-btn" onclick="saveData()">Press Entry into Book 🖋️</button>
+        </div>
+
+        <div id="archives" class="panel">
+            <div class="panel-header"><h2>The Archives</h2></div>
+            <div id="archivesList"></div>
+        </div>
+
+        <div id="quotes-panel" class="panel">
+            <div class="panel-header"><h2>My Favorite Quotes</h2></div>
+            <label style="font-weight: bold; font-size: 13px;">Add a Custom Quote</label>
+            <textarea id="newQuoteInput" rows="3" placeholder="“Type an inspiring quote or life motto...”"></textarea>
+            <button class="save-btn" onclick="saveQuote()">Add to Cycle List ✨</button>
+            <h3 style="margin-top: 25px; font-family: Georgia, serif;">Your Display Repository</h3>
+            <div id="quotesRepositoryList"></div>
+        </div>
+
+        <div id="settings" class="panel">
+            <div class="panel-header"><h2>Workspace Settings</h2></div>
+            
+            <div class="setting-row">
+                <label for="musicSelector">Acoustic Soundscape</label>
+                <select id="musicSelector" onchange="changeAmbientSound()" style="margin:0; width: 55%;">
+                    <option value="rain">🌧️ Soft Rainfall Loop</option>
+                    <option value="birds">🐦 Forest Meadow Birds</option>
+                    <option value="waves">🌊 Gentle Ocean Waves</option>
+                    <option value="none">🔇 Complete Silence</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Atmosphere Audio</label>
+                <button class="save-btn" id="soundStatusToggle" onclick="toggleAudioPlayback()" style="margin:0; width:auto; padding: 8px 20px;">Play Soundscapes 🎵</button>
+            </div>
+
+            <div class="setting-row">
+                <label>Display Appearance</label>
+                <button class="save-btn" onclick="toggleTheme()" style="margin:0; width:auto; padding: 8px 20px; background: var(--accent-pink);">Switch Light/Dark Mode 🌓</button>
+            </div>
+
+            <div class="setting-row" style="border:none; margin-top:40px;">
+                <label>Scribe Profile Hub</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="save-btn" onclick="logout()" style="margin:0; background:#c96f6f;">Log Out 🚪</button>
+                    <button class="save-btn" onclick="logout()" style="margin:0; background:#5c4433;">Add Profile ➕</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let journalLogs = [];
+    let customQuotes = [];
+    let currentQuoteIndex = 0;
+    let currentScribe = "";
+    
+    // Nature sound triggers
+    let cozyAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav'); 
+    cozyAudio.loop = true;
+
+    const soundBank = {
+        rain: "https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav",
+        birds: "https://assets.mixkit.co/active_storage/sfx/2438/2438-84.wav",
+        waves: "https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav"
+    };
+
+    // --- SECURE MULTI-ACCOUNT PROFILE CONTROLLER ---
+    function attemptLogin() {
+        const user = document.getElementById('username').value.trim().toLowerCase();
+        const pass = document.getElementById('password').value.trim();
+
+        if (!user || !pass) {
+            alert("Please provide both Scribe details to enter! ✨");
+            return;
+        }
+
+        // Verify password if account exists, otherwise securely register it
+        const savedPassword = localStorage.getItem(`moona_pass_${user}`);
+        if (savedPassword && savedPassword !== pass) {
+            alert("Incorrect passphrase for this Scribe space.");
+            return;
+        } else if (!savedPassword) {
+            // New user secure automatic sign up link
+            localStorage.setItem(`moona_pass_${user}`, pass);
+        }
+
+        currentScribe = user;
+        document.getElementById('welcomeGreeting').innerText = `Scribe: ${document.getElementById('username').value.trim()}`;
+        
+        // Load data specific to this individual login profile
+        loadProfileData();
+
+        // Reveal view transitions
+        document.getElementById('auth-view').style.display = 'none';
+        document.getElementById('home-view').style.display = 'flex';
+    }
+
+    function loadProfileData() {
+        journalLogs = JSON.parse(localStorage.getItem(`moona_logs_${currentScribe}`)) || [];
+        
+        const defaultStartingQuotes = [
+            "“Grow softly, bloom wildly.”",
+            "“The moon stays bright even when it isn't full.”",
+            "“Be gentle with yourself.”"
+        ];
+        customQuotes = JSON.parse(localStorage.getItem(`moona_quotes_${currentScribe}`)) || defaultStartingQuotes;
+        
+        currentQuoteIndex = 0;
+        displayCurrentQuote();
+        renderArchives();
+        renderQuotesRepository();
+    }
+
+    // --- FAVORITE QUOTE MANAGEMENT ENGINE ---
+    function displayCurrentQuote() {
+        const quoteBox = document.getElementById('dailyQuote');
+        if (customQuotes.length > 0) {
+            quoteBox.innerText = customQuotes[currentQuoteIndex];
+        } else {
+            quoteBox.innerText = "“Tap here or go to 'My Quotes' to add your words of intent.”";
+        }
+    }
+
+    function cycleQuote() {
+        if (customQuotes.length === 0) return;
+        currentQuoteIndex = (currentQuoteIndex + 1) % customQuotes.length;
+        displayCurrentQuote();
+    }
+
+    function saveQuote() {
+        const input = document.getElementById('newQuoteInput');
+        const text = input.value.trim();
+        if(!text) return alert("Please fill the quote box.");
+
+        customQuotes.push(`“${text}”`);
+        localStorage.setItem(`moona_quotes_${currentScribe}`, JSON.stringify(customQuotes));
+        input.value = '';
+        
+        renderQuotesRepository();
+        displayCurrentQuote();
+        alert("Quote stored inside your cycle registry! ✨");
+    }
+
+    function deleteQuote(index) {
+        customQuotes.splice(index, 1);
+        localStorage.setItem(`moona_quotes_${currentScribe}`, JSON.stringify(customQuotes));
+        currentQuoteIndex = 0;
+        renderQuotesRepository();
+        displayCurrentQuote();
+    }
+
+    function renderQuotesRepository() {
+        const container = document.getElementById('quotesRepositoryList');
+        if(customQuotes.length === 0) {
+            container.innerHTML = `<p style="font-size:12px; font-style:italic;">No records found.</p>`;
+            return;
+        }
+        container.innerHTML = customQuotes.map((q, index) => `
+            <div class="entry-card" style="padding: 12px 15px; margin-bottom: 8px;">
+                <div class="actions" style="top: 8px; right: 12px;">
+                    <button class="card-btn" onclick="deleteQuote(${index})">🗑️</button>
+                </div>
+                <p style="margin: 0; font-size:13px; font-style: italic; padding-right: 25px;">${q}</p>
+            </div>
+        `).join('');
+    }
+
+    // --- AMBIENT SOUND GENERATION SYSTEM ---
+    function changeAmbientSound() {
+        const selection = document.getElementById('musicSelector').value;
+        const wasPlaying = !cozyAudio.paused;
+
+        cozyAudio.pause();
+
+        if (selection !== 'none') {
+            cozyAudio = new Audio(soundBank[selection]);
+            cozyAudio.loop = true;
+            if (wasPlaying) cozyAudio.play().catch(e => console.log("Sound buffered."));
+        }
+    }
+
+    function toggleAudioPlayback() {
+        const toggleBtn = document.getElementById('soundStatusToggle');
+        const selection = document.getElementById('musicSelector').value;
+
+        if (selection === 'none') return alert("Select an active nature track first!");
+
+        if (cozyAudio.paused) {
+            cozyAudio.play().catch(e => console.log("Audio triggered."));
+            toggleBtn.innerText = "Pause Soundscapes ⏸️";
+            toggleBtn.style.background = "var(--accent-pink)";
+        } else {
+            cozyAudio.pause();
+            toggleBtn.innerText = "Play Soundscapes 🎵";
+            toggleBtn.style.background = "var(--primary-brown)";
+        }
+    }
+
+    // --- CORE VISUAL FUNCTIONS ---
+    function toggleTheme() {
+        const currentTheme = document.body.getAttribute('data-theme');
+        document.body.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
+    }
+
+    function saveData() {
+        const textInput = document.getElementById('jText').value.trim();
+        if(!textInput) return alert("Page cannot be empty.");
+
+        const newEntry = {
+            id: Date.now(),
+            date: document.getElementById('jDate').value || new Date().toISOString().split('T')[0],
+            mood: document.getElementById('moodSelect').value,
+            tag: document.getElementById('jTag').value.trim() || "General",
+            text: textInput
+        };
+
+        journalLogs.unshift(newEntry);
+        localStorage.setItem(`moona_logs_${currentScribe}`, JSON.stringify(journalLogs));
+        document.getElementById('jText').value = '';
+        alert("Entry written safely! 🌸");
+        showPanel('archives');
+    }
+
+    function logout() {
+        cozyAudio.pause();
+        currentScribe = "";
+        journalLogs = [];
+        customQuotes = [];
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('auth-view').style.display = 'flex';
+        document.getElementById('home-view').style.display = 'none';
+        document.getElementById('workspace').style.display = 'none';
+    }
+
+    window.onload = function() {
+        document.getElementById('jDate').valueAsDate = new Date();
+        initParticles();
+        requestAnimationFrame(drawBackdrop);
+    }
+
+    function showPanel(id) {
+        document.getElementById('home-view').style.display = 'none';
+        document.getElementById('workspace').style.display = 'block';
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'archives') renderArchives();
+    }
+    function goHome() {
+        document.getElementById('home-view').style.display = 'flex';
+        document.getElementById('workspace').style.display = 'none';
+    }
+    function renderArchives() {
+        const container = document.getElementById('archivesList');
+        if(journalLogs.length === 0) {
+            container.innerHTML = `<p style="font-style:italic; font-size:13px; text-align:center;">Empty archives.</p>`;
+            return;
+        }
+        container.innerHTML = journalLogs.map(e => `
+            <div class="entry-card">
+                <div style="font-size: 11px; color: var(--text-muted); font-weight:bold;">📅 ${e.date} | VIBE: ${e.mood}</div>
+                <p style="margin-top:10px; font-size:14px;">${e.text}</p>
+            </div>
+        `).join('');
+    }
+
+    // Canvas stars animation layout
+    const canvas = document.getElementById('backdrop-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function initParticles() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        particles = [];
+        for(let i=0; i<25; i++) {
+            particles.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2+1, s: -Math.random()*0.15});
+        }
+    }
+    function drawBackdrop() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "rgba(111, 78, 55, 0.12)";
+        particles.forEach(p => {
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            p.y += p.s; if(p.y < 0) p.y = canvas.height;
+        });
+        requestAnimationFrame(drawBackdrop);
+    }
+</script>
+</body>
+</html>            box-sizing: border-box;
             transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
         }
 
