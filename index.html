@@ -32,9 +32,858 @@
             box-sizing: border-box;
             transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
         }
-        html, body {
-            height: 100%;
-            overflow: hidden !important;
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        #backdrop-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; pointer-events: none;
+        }
+        .top-controls {
+            position: absolute;
+            top: 20px; right: 20px;
+            display: none;
+            gap: 10px; z-index: 10;
+        }
+        .control-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 45px; height: 45px;
+            font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* --- Auth View Layout --- */
+        #auth-view {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; max-width: 400px; padding: 10px;
+            z-index: 2;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .auth-card {
+            background-color: var(--card-bg); border: 2px dashed var(--border-color);
+            padding: 30px 25px; border-radius: 24px; width: 100%;
+            box-shadow: 0 8px 24px rgba(111, 78, 55, 0.04); text-align: center;
+        }
+        .auth-card h2 { font-family: Georgia, serif; font-size: 2em; margin: 10px 0 5px 0; color: var(--primary-brown); letter-spacing: 1px; }
+        .auth-card .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; font-style: italic; }
+        
+        /* Auth Mode Switcher Tabs */
+        .auth-tabs { display: flex; background: rgba(111, 78, 55, 0.05); padding: 5px; border-radius: 12px; margin-bottom: 20px; gap: 5px; }
+        .auth-tab-btn { flex: 1; border: none; background: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+        .auth-tab-btn.active { background: var(--card-bg); color: var(--primary-brown); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+
+        .input-group { text-align: left; margin-bottom: 15px; position: relative; }
+        .input-group label { font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 6px; }
+        .auth-btn {
+            background: #5c4433; color: #fffaf6; border: none; padding: 15px; border-radius: 14px;
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; margin-top: 10px;
+        }
+        .auth-btn:hover { opacity: 0.95; }
+        .recovery-link { font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: underline; position: absolute; right: 0; top: 0; font-weight: bold; }
+
+        /* --- Home View --- */
+        #home-view {
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; width: 100%; padding: 40px 0; z-index: 2;
+            animation: fadeIn var(--transition-speed) ease-in-out;
+        }
+        .moon-container { position: relative; margin-bottom: 15px; }
+        .moon-icon {
+            width: 80px; height: 80px; background: #e6c687; border-radius: 50%;
+            box-shadow: 0 0 20px rgba(230,198,135,0.6); transform: rotate(-20deg); position: relative;
+        }
+        [data-theme="light"] .moon-icon {
+            background: var(--primary-brown); box-shadow: inset -18px 0 0 4px var(--soft-pink);
+        }
+        .user-profile-badge {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            padding: 6px 16px; border-radius: 30px; margin-bottom: 15px; font-size: 14px; font-weight: bold;
+        }
+        h1 { font-size: 3em; margin: 10px 0; font-family: Georgia, serif; letter-spacing: 2px; }
+        .quote { font-style: italic; color: var(--text-muted); margin-bottom: 25px; max-width: 400px; line-height: 1.4; }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 450px; }
+        .choice-btn {
+            background-color: var(--card-bg); border: 2px dashed var(--border-color);
+            color: var(--text-main); padding: 20px 15px; border-radius: 18px;
+            cursor: pointer; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .choice-btn:hover { transform: translateY(-2px); border-style: solid; }
+        .choice-btn.full-width { grid-column: span 2; }
+        
+        /* --- Workspace Modules --- */
+        #workspace { display: none; width: 100%; max-width: 550px; padding-bottom: 60px; margin-top: 40px; z-index: 2; }
+        .panel { display: none; background: var(--panel-bg); padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); backdrop-filter: blur(10px); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .panel-header h2 { margin: 0; font-family: Georgia, serif; }
+        input, select, textarea { width: 100%; padding: 14px; margin: 8px 0 18px 0; border: 2px solid var(--border-color); border-radius: 14px; background: var(--card-bg); color: var(--text-main); font-size: 14px; }
+        .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .save-btn { background: var(--primary-brown); color: var(--bg-cream); border: none; padding: 16px; border-radius: 14px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; margin-top: 5px;}
+        .entry-card { background: var(--card-bg); padding: 20px; border-radius: 20px; margin-bottom: 15px; border-left: 6px solid var(--soft-pink); position: relative; text-align: left; }
+        .entry-card .actions { position: absolute; top: 15px; right: 15px; }
+        .card-btn { background: none; border: none; cursor: pointer; font-size: 16px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px dashed var(--border-color); }
+        .setting-row label { font-weight: bold; font-size: 14px; }
+
+        /* --- Mood Bar Insights Graphic --- */
+        .insight-bar-container { background: rgba(111, 78, 55, 0.1); border-radius: 10px; height: 24px; width: 100%; overflow: hidden; margin: 15px 0; display: flex; }
+        .insight-segment { height: 100%; text-align: center; color: white; font-size: 11px; font-weight: bold; line-height: 24px; transition: width 0.3s ease; }
+        
+        /* Time Filter Submenu Buttons */
+        .filter-tabs { display: flex; gap: 5px; margin-bottom: 15px; width: 100%; overflow-x: auto; }
+        .filter-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        .filter-btn.active { background: var(--primary-brown); color: var(--bg-cream); }
+    </style>
+</head>
+<body data-theme="light">
+    <canvas id="backdrop-canvas"></canvas>
+    
+    <div class="top-controls" id="settingsContainer">
+        <button class="control-btn" onclick="showPanel('settings')" title="Open Workspace Settings">⚙️</button>
+    </div>
+
+    <section id="auth-view">
+        <div class="auth-card">
+            <div class="moon-container" style="margin-bottom: 5px;">
+                <div class="moon-icon" style="width: 60px; height: 60px; margin: 0 auto;"></div>
+            </div>
+            <h2>Moona</h2>
+            <p class="subtitle">Enter your cozy space sanctuary</p>
+            
+            <div class="auth-tabs">
+                <button type="button" id="tabLogin" class="auth-tab-btn active" onclick="setAuthMode('login')">Log In</button>
+                <button type="button" id="tabSignup" class="auth-tab-btn" onclick="setAuthMode('signup')">Sign Up</button>
+            </div>
+
+            <div class="input-group" id="previousAccountsContainer" style="display:none; margin-bottom: 20px;">
+                <label for="profileSelect">Saved Spaces on this Device</label>
+                <select id="profileSelect" onchange="autoPopulateProfile()" style="margin: 6px 0 0 0;">
+                    <option value="">-- Choose a previous account --</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="username">Scribe Name</label>
+                <input type="text" id="username" placeholder="Enter your scribe name...">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Passphrase</label>
+                <span id="forgotLink" class="recovery-link" onclick="recoverPassphrase()">Forgot?</span>
+                <input type="password" id="password" placeholder="Enter your passphrase...">
+            </div>
+
+            <div class="input-group" id="birthdayInputGroup" style="display:none;">
+                <label for="userBirthday">Your Birthday <span style="font-weight:normal; font-size:11px; color:var(--text-muted);">(Used for recovery on other devices)</span></label>
+                <input type="date" id="userBirthday">
+            </div>
+
+            <button class="auth-btn" id="submitAuthBtn" onclick="handleAuthSubmit()">Log In to Space</button>
+        </div>
+    </section>
+
+    <section id="home-view">
+        <div class="moon-container">
+            <div class="moon-icon"></div>
+        </div>
+        
+        <div class="user-profile-badge">
+            ✍️ <span id="welcomeGreeting">Cozy Scribe</span>
+        </div>
+
+        <h1>Moona</h1>
+        
+        <p class="quote" id="dailyQuote" onclick="cycleQuote()" style="cursor: pointer;" title="Click to see your next quote!"></p>
+       
+        <div class="nav-grid">
+            <button class="choice-btn" onclick="showPanel('journal')">✍️ <span>New Entry</span></button>
+            <button class="choice-btn" onclick="showPanel('archives')">📜 <span>The Archives</span></button>
+            <button class="choice-btn" onclick="showPanel('quotes-panel')">💬 <span>My Quotes</span></button>
+            <button class="choice-btn" onclick="showPanel('insights')">📊 <span>Mood Insights</span></button>
+            <button class="choice-btn full-width" onclick="cycleQuote()">💡 <span>Cycle Next Favorite Quote</span></button>
+        </div>
+    </section>
+
+    <div id="workspace">
+        <button class="save-btn" onclick="goHome()" style="margin-bottom: 20px; width:auto; padding: 10px 20px; background: var(--card-bg); color: var(--text-main); border: 2px solid var(--border-color);">← Return Home</button>
+        
+        <div id="journal" class="panel">
+            <div class="panel-header"><h2>Write Memory</h2></div>
+            <div class="row-grid">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold;">Date</label>
+                    <input type="date" id="jDate">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold;">Current Mood</label>
+                    <select id="moodSelect">
+                        <option value="Calm">Calm 🍃</option>
+                        <option value="Radiant">Radiant ✨</option>
+                        <option value="Melancholy">Melancholy 🌧️</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:5px;">
+                <input type="text" id="customMoodInput" placeholder="Add custom emotion (e.g., Grateful 🌸)" style="margin:0; padding:10px;">
+                <button type="button" class="save-btn" onclick="addNewCustomMood()" style="margin:0; width:auto; padding:10px 14px; font-size:13px; white-space:nowrap;">+ Add</button>
+            </div>
+
+            <input type="text" id="jTag" placeholder="e.g. Life, Travel, Growth" style="margin-top:15px;">
+            <textarea id="jText" rows="6" placeholder="Pour your thoughts freely onto this page..."></textarea>
+            <button class="save-btn" onclick="saveData()">Press Entry into Book 🖋️</button>
+        </div>
+
+        <div id="archives" class="panel">
+            <div class="panel-header"><h2>The Archives</h2></div>
+            <div id="archivesList"></div>
+        </div>
+
+        <div id="quotes-panel" class="panel">
+            <div class="panel-header"><h2>My Favorite Quotes</h2></div>
+            <label style="font-weight: bold; font-size: 13px;">Add a Custom Quote</label>
+            <textarea id="newQuoteInput" rows="3" placeholder="“Type an inspiring quote or life motto...”"></textarea>
+            <button class="save-btn" onclick="saveQuote()">Add to Cycle List ✨</button>
+            <h3 style="margin-top: 25px; font-family: Georgia, serif;">Your Display Repository</h3>
+            <div id="quotesRepositoryList"></div>
+        </div>
+
+        <div id="insights" class="panel">
+            <div class="panel-header"><h2>Mood Insights</h2></div>
+            
+            <div class="filter-tabs">
+                <button class="filter-btn active" onclick="switchInsightRange('thisWeek', this)">This Week</button>
+                <button class="filter-btn" onclick="switchInsightRange('pastWeek', this)">Past Week</button>
+                <button class="filter-btn" onclick="switchInsightRange('thisMonth', this)">This Month</button>
+                <button class="filter-btn" onclick="switchInsightRange('pastMonth', this)">Past Month</button>
+                <button class="filter-btn" onclick="switchInsightRange('allTime', this)">All Time</button>
+            </div>
+
+            <div class="insight-bar-container" id="insightsDistributionBar"></div>
+            <div id="insightsStatsSummary" style="text-align: left; font-size: 14px; line-height: 1.8;"></div>
+        </div>
+
+        <div id="settings" class="panel">
+            <div class="panel-header"><h2>Workspace Settings</h2></div>
+            
+            <div class="setting-row">
+                <label for="musicSelector">Acoustic Soundscape</label>
+                <select id="musicSelector" onchange="changeAmbientSound()" style="margin:0; width: 55%;">
+                    <option value="rain">🌧️ Soft Rainfall Loop</option>
+                    <option value="birds">🐦 Forest Meadow Birds</option>
+                    <option value="waves">🌊 Gentle Ocean Waves</option>
+                    <option value="none">🔇 Complete Silence</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Atmosphere Audio</label>
+                <button class="save-btn" id="soundStatusToggle" onclick="toggleAudioPlayback()" style="margin:0; width:auto; padding: 8px 20px;">Play Soundscapes 🎵</button>
+            </div>
+
+            <div class="setting-row">
+                <label>Display Appearance</label>
+                <button class="save-btn" onclick="toggleTheme()" style="margin:0; width:auto; padding: 8px 20px; background: var(--accent-pink);">Switch Light/Dark Mode 🌓</button>
+            </div>
+
+            <div class="setting-row" id="birthdaySettingRow" style="display:none;">
+                <label>Stored Birthday Value</label>
+                <span id="storedBirthdayDisplay" style="font-size:14px; font-weight:bold; color:var(--text-muted);">Not Set</span>
+            </div>
+
+            <div class="setting-row" style="border:none; margin-top:40px;">
+                <label>Scribe Profile Hub</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="save-btn" onclick="logout()" style="margin:0; background:#c96f6f;">Log Out 🚪</button>
+                    <button class="save-btn" onclick="logout()" style="margin:0; background:#5c4433;">Add Profile ➕</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let journalLogs = [];
+    let customQuotes = [];
+    let currentQuoteIndex = 0;
+    let currentScribe = "";
+    let activeInsightScope = "thisWeek";
+    let currentAuthMode = "login"; // tracks 'login' or 'signup'
+    
+    let cozyAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav'); 
+    cozyAudio.loop = true;
+
+    const soundBank = {
+        rain: "https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav",
+        birds: "https://assets.mixkit.co/active_storage/sfx/2438/2438-84.wav",
+        waves: "https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav"
+    };
+
+    const canvas = document.getElementById('backdrop-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let currentThemeMode = "light";
+
+    // --- GATEWAY VISUAL MODE CONTROLLER ---
+    function setAuthMode(mode) {
+        currentAuthMode = mode;
+        const loginTab = document.getElementById('tabLogin');
+        const signupTab = document.getElementById('tabSignup');
+        const bdayGroup = document.getElementById('birthdayInputGroup');
+        const forgotLink = document.getElementById('forgotLink');
+        const submitBtn = document.getElementById('submitAuthBtn');
+        
+        // Clear values out on flip to prevent crossing inputs
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('userBirthday').value = '';
+
+        if(mode === 'login') {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            bdayGroup.style.display = 'none';
+            forgotLink.style.display = 'inline';
+            submitBtn.innerText = "Log In to Space";
+            scanExistingProfiles();
+        } else {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            bdayGroup.style.display = 'block';
+            forgotLink.style.display = 'none';
+            submitBtn.innerText = "Create New Account & Space";
+            document.getElementById('previousAccountsContainer').style.display = 'none';
+        }
+    }
+
+    // --- ACCUMULATE AND TRACK MULTIPLE ACCOUNTS ---
+    function scanExistingProfiles() {
+        if(currentAuthMode !== 'login') return;
+        
+        const profileSelect = document.getElementById('profileSelect');
+        const container = document.getElementById('previousAccountsContainer');
+        profileSelect.innerHTML = '<option value="">-- Choose a previous account --</option>';
+        
+        let foundAccounts = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith("moona_pass_")) {
+                const user = key.replace("moona_pass_", "");
+                foundAccounts.push(user);
+            }
+        }
+
+        if (foundAccounts.length > 0) {
+            container.style.display = 'block';
+            foundAccounts.forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc;
+                opt.innerText = acc.toUpperCase();
+                profileSelect.appendChild(opt);
+            });
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function autoPopulateProfile() {
+        const val = document.getElementById('profileSelect').value;
+        if (val) {
+            document.getElementById('username').value = val;
+            document.getElementById('password').value = localStorage.getItem(`moona_pass_${val}`) || "";
+        }
+    }
+
+    // --- FORGOTTEN PASSWORD RECOVERY HANDLER ---
+    function recoverPassphrase() {
+        const user = document.getElementById('username').value.trim().toLowerCase();
+        if (!user) {
+            alert("Please enter your Scribe Name first so we know which account to look up!");
+            return;
+        }
+
+        const savedPassword = localStorage.getItem(`moona_pass_${user}`);
+        if (!savedPassword) {
+            alert("No account found with that Scribe Name.");
+            return;
+        }
+
+        const verifyBday = prompt(`🔑 Password Recovery for [ ${user.toUpperCase()} ]:\nPlease enter your Birthday to verify ownership (YYYY-MM-DD):`);
+        if (!verifyBday) return;
+
+        const savedBday = localStorage.getItem(`moona_bday_${user}`);
+        if (savedBday && savedBday === verifyBday.trim()) {
+            alert(`✨ Verification Confirmed! Your passphrase is:\n\n👉  ${savedPassword}\n\nIt has been auto-filled into your password slot.`);
+            document.getElementById('password').value = savedPassword;
+        } else {
+            alert("The birthday provided does not match our security ledger for this account.");
+        }
+    }
+
+    // --- INTEGRATED AUTH SUBMIT GATEWAY ROUTER ---
+    function handleAuthSubmit() {
+        const user = document.getElementById('username').value.trim().toLowerCase();
+        const pass = document.getElementById('password').value.trim();
+        const bday = document.getElementById('userBirthday').value;
+
+        if (!user || !pass) {
+            alert("Please provide both a Scribe Name and Passphrase to proceed! ✨");
+            return;
+        }
+
+        const savedPassword = localStorage.getItem(`moona_pass_${user}`);
+
+        if (currentAuthMode === 'signup') {
+            // Sign Up Path Logic
+            if (savedPassword) {
+                alert("An account with this Scribe Name already exists! Please use the Log In screen instead.");
+                return;
+            }
+            if (!bday) {
+                alert("Please add your Birthday! This is essential to recover your account if you move to a new phone and forget your passphrase.");
+                return;
+            }
+            
+            // Commit credentials to safe browser node cache
+            localStorage.setItem(`moona_pass_${user}`, pass);
+            localStorage.setItem(`moona_bday_${user}`, bday);
+            alert(`🎉 Space Created Successfully for ${user.toUpperCase()}! Your recovery birthday has been documented.`);
+            
+        } else {
+            // Log In Path Logic
+            if (!savedPassword) {
+                alert("No account found with that Scribe Name. Switch to 'Sign Up' to create a new space!");
+                return;
+            }
+            if (savedPassword !== pass) {
+                alert("Incorrect passphrase for this space. If you forgot it, use the 'Forgot?' button at the side.");
+                return;
+            }
+        }
+
+        // Successfully authenticated - launch interface initialization
+        currentScribe = user;
+        document.getElementById('welcomeGreeting').innerText = `Scribe: ${document.getElementById('username').value.trim()}`;
+        
+        const currentStoredBday = localStorage.getItem(`moona_bday_${user}`);
+        if (currentStoredBday) {
+            document.getElementById('birthdaySettingRow').style.display = 'flex';
+            document.getElementById('storedBirthdayDisplay').innerText = currentStoredBday;
+        } else {
+            document.getElementById('birthdaySettingRow').style.display = 'none';
+        }
+
+        loadProfileData();
+
+        cozyAudio.play().then(() => {
+            document.getElementById('soundStatusToggle').innerText = "Pause Soundscapes ⏸️";
+            document.getElementById('soundStatusToggle').style.background = "var(--accent-pink)";
+        }).catch(e => console.log("Audio awaiting configuration context initialization."));
+
+        document.getElementById('auth-view').style.display = 'none';
+        document.getElementById('home-view').style.display = 'flex';
+        document.getElementById('settingsContainer').style.display = 'flex';
+        document.body.style.justifyContent = 'initial';
+    }
+
+    function loadProfileData() {
+        journalLogs = JSON.parse(localStorage.getItem(`moona_logs_${currentScribe}`)) || [];
+        
+        const defaultStartingQuotes = [
+            "“Grow softly, bloom wildly.”",
+            "“The moon stays bright even when it isn't full.”",
+            "“Be gentle with yourself.”"
+        ];
+        customQuotes = JSON.parse(localStorage.getItem(`moona_quotes_${currentScribe}`)) || defaultStartingQuotes;
+        
+        const savedMoods = JSON.parse(localStorage.getItem(`moona_custom_moods_${currentScribe}`)) || [];
+        const selectElement = document.getElementById('moodSelect');
+        
+        selectElement.innerHTML = `
+            <option value="Calm">Calm 🍃</option>
+            <option value="Radiant">Radiant ✨</option>
+            <option value="Melancholy">Melancholy 🌧️</option>
+        `;
+        savedMoods.forEach(m => {
+            const o = document.createElement('option');
+            o.value = m.split(' ')[0];
+            o.innerText = m;
+            selectElement.appendChild(o);
+        });
+
+        currentQuoteIndex = 0;
+        displayCurrentQuote();
+        renderArchives();
+        renderQuotesRepository();
+        calculateMoodInsights();
+    }
+
+    // --- ADD NEW EMOTION INLINE MODULE ---
+    function addNewCustomMood() {
+        const input = document.getElementById('customMoodInput');
+        const text = input.value.trim();
+        if(!text) return alert("Type your custom mood icon/emotion string first.");
+
+        let savedMoods = JSON.parse(localStorage.getItem(`moona_custom_moods_${currentScribe}`)) || [];
+        if(savedMoods.includes(text)) {
+            alert("This emotional variable is already inside your book inventory logs.");
+            return;
+        }
+
+        savedMoods.push(text);
+        localStorage.setItem(`moona_custom_moods_${currentScribe}`, JSON.stringify(savedMoods));
+        
+        const selectElement = document.getElementById('moodSelect');
+        const o = document.createElement('option');
+        o.value = text.split(' ')[0];
+        o.innerText = text;
+        selectElement.appendChild(o);
+        selectElement.value = o.value;
+
+        input.value = '';
+        alert(`"${text}" combined with your primary collection successfully!`);
+    }
+
+    // --- FAVORITE QUOTES RETRIEVAL ENGINE ---
+    function displayCurrentQuote() {
+        const quoteBox = document.getElementById('dailyQuote');
+        if (customQuotes.length > 0) {
+            quoteBox.innerText = customQuotes[currentQuoteIndex];
+        } else {
+            quoteBox.innerText = "“Tap here or go to 'My Quotes' to add your words of intent.”";
+        }
+    }
+
+    function cycleQuote() {
+        if (customQuotes.length === 0) return;
+        currentQuoteIndex = (currentQuoteIndex + 1) % customQuotes.length;
+        displayCurrentQuote();
+    }
+
+    function saveQuote() {
+        const input = document.getElementById('newQuoteInput');
+        const text = input.value.trim();
+        if(!text) return alert("Please fill the quote box.");
+
+        customQuotes.push(`“${text}”`);
+        localStorage.setItem(`moona_quotes_${currentScribe}`, JSON.stringify(customQuotes));
+        input.value = '';
+        
+        renderQuotesRepository();
+        displayCurrentQuote();
+        alert("Quote stored inside your cycle registry! ✨");
+    }
+
+    function deleteQuote(index) {
+        customQuotes.splice(index, 1);
+        localStorage.setItem(`moona_quotes_${currentScribe}`, JSON.stringify(customQuotes));
+        currentQuoteIndex = 0;
+        renderQuotesRepository();
+        displayCurrentQuote();
+    }
+
+    function renderQuotesRepository() {
+        const container = document.getElementById('quotesRepositoryList');
+        if(customQuotes.length === 0) {
+            container.innerHTML = `<p style="font-size:12px; font-style:italic;">No records found.</p>`;
+            return;
+        }
+        container.innerHTML = customQuotes.map((q, index) => `
+            <div class="entry-card" style="padding: 12px 15px; margin-bottom: 8px;">
+                <div class="actions" style="top: 8px; right: 12px;">
+                    <button class="card-btn" onclick="deleteQuote(${index})">🗑️</button>
+                </div>
+                <p style="margin: 0; font-size:13px; font-style: italic; padding-right: 25px;">${q}</p>
+            </div>
+        `).join('');
+    }
+
+    // --- TIME WINDOW SCOPE RE-INDEX ENGINE ---
+    function switchInsightRange(range, element) {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+        activeInsightScope = range;
+        calculateMoodInsights();
+    }
+
+    // --- MOOD INSIGHTS GENERATION SYSTEM WITH TIMELINES ---
+    function calculateMoodInsights() {
+        const bar = document.getElementById('insightsDistributionBar');
+        const summary = document.getElementById('insightsStatsSummary');
+        
+        if (journalLogs.length === 0) {
+            bar.innerHTML = `<div style="width: 100%; background: #ccc; text-align:center; color:#666; font-size:12px; line-height:24px;">No entries tracked yet</div>`;
+            summary.innerHTML = `<p style="text-align:center; font-style:italic;">Write down your first memory book entry to generate automated core insights.</p>`;
+            return;
+        }
+
+        const today = new Date("2026-05-26");
+        
+        const startOfThisWeek = new Date(today);
+        startOfThisWeek.setDate(today.getDate() - today.getDay());
+        
+        const startOfPastWeek = new Date(startOfThisWeek);
+        startOfPastWeek.setDate(startOfThisWeek.getDate() - 7);
+        const endOfPastWeek = new Date(startOfThisWeek);
+
+        const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        const startOfPastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const endOfPastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
+        let filteredLogs = journalLogs.filter(entry => {
+            const entryDate = new Date(entry.date);
+            if (activeInsightScope === "thisWeek") return entryDate >= startOfThisWeek;
+            if (activeInsightScope === "pastWeek") return entryDate >= startOfPastWeek && entryDate < endOfPastWeek;
+            if (activeInsightScope === "thisMonth") return entryDate >= startOfThisMonth;
+            if (activeInsightScope === "pastMonth") return entryDate >= startOfPastMonth && entryDate <= endOfPastMonth;
+            return true;
+        });
+
+        if (filteredLogs.length === 0) {
+            bar.innerHTML = `<div style="width: 100%; background: rgba(111,78,55,0.15); text-align:center; color:var(--text-muted); font-size:12px; line-height:24px;">No entries found for this time span</div>`;
+            summary.innerHTML = `<p style="text-align:center; font-style:italic; font-size:13px; color:var(--text-muted);">No logs match this specific range. Try shifting scope settings above!</p>`;
+            return;
+        }
+
+        let counts = {};
+        filteredLogs.forEach(entry => {
+            counts[entry.mood] = (counts[entry.mood] || 0) + 1;
+        });
+
+        const total = filteredLogs.length;
+        const colorPalette = ["#a8dadc", "#ffe3a8", "#457b9d", "#ffb7b2", "#e2b2ff", "#b2ffb7", "#ffd1b2"];
+        let colorIdx = 0;
+
+        bar.innerHTML = "";
+        let summaryListHTML = `<ul><li><strong>Entries in Selected Scope:</strong> ${total}</li>`;
+
+        Object.keys(counts).forEach(moodKey => {
+            const pct = Math.round((counts[moodKey] / total) * 100);
+            const segmentColor = moodKey === "Calm" ? "#a8dadc" : moodKey === "Radiant" ? "#ffe3a8" : moodKey === "Melancholy" ? "#457b9d" : colorPalette[colorIdx % colorPalette.length];
+            colorIdx++;
+
+            bar.innerHTML += `<div class="insight-segment" style="width: ${pct}%; background: ${segmentColor}; color:#5c4433;" title="${moodKey}: ${pct}%">${pct > 12 ? moodKey.substring(0,3) : ''}</div>`;
+            summaryListHTML += `<li><strong>${moodKey}:</strong> ${counts[moodKey]} entries (${pct}%)</li>`;
+        });
+
+        summaryListHTML += `</ul>`;
+        summary.innerHTML = summaryListHTML;
+    }
+
+    // --- SOUND ENGINE ---
+    function changeAmbientSound() {
+        const selection = document.getElementById('musicSelector').value;
+        const wasPlaying = !cozyAudio.paused;
+        cozyAudio.pause();
+
+        if (selection !== 'none') {
+            cozyAudio = new Audio(soundBank[selection]);
+            cozyAudio.loop = true;
+            if (wasPlaying) cozyAudio.play().catch(e => console.log("Sound buffered safely."));
+        }
+    }
+
+    // --- TIMEOUT CONTROL PLAYBACK ---
+    function toggleAudioPlayback() {
+        const toggleBtn = document.getElementById('soundStatusToggle');
+        const selection = document.getElementById('musicSelector').value;
+
+        if (selection === 'none') return alert("Select an active nature track first!");
+
+        if (cozyAudio.paused) {
+            cozyAudio.play().catch(e => console.log("Audio unlocked."));
+            toggleBtn.innerText = "Pause Soundscapes ⏸️";
+            toggleBtn.style.background = "var(--accent-pink)";
+        } else {
+            cozyAudio.pause();
+            toggleBtn.innerText = "Play Soundscapes 🎵";
+            toggleBtn.style.background = "var(--primary-brown)";
+        }
+    }
+
+    // --- VISUAL NATURE CANVAS BACKGROUND DYNAMICS ---
+    function initParticles() {
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight;
+        particles = [];
+        
+        for(let i = 0; i < 30; i++) {
+            if (currentThemeMode === "light") {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 4 + 3,
+                    speedY: Math.random() * 0.8 + 0.4,
+                    speedX: Math.random() * 0.4 - 0.2,
+                    angle: Math.random() * 360,
+                    spin: Math.random() * 0.5 - 0.25
+                });
+            } else {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedY: Math.random() * 0.3 + 0.1,
+                    speedX: Math.random() * 0.1 - 0.05,
+                    opacity: Math.random(),
+                    glowSpeed: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+    }
+
+    function drawBackdrop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(p => {
+            if (currentThemeMode === "light") {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.angle * Math.PI) / 180);
+                ctx.fillStyle = "rgba(255, 183, 178, 0.65)";
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.arc(0, -p.size / 1.5, p.size / 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.rotate((72 * Math.PI) / 180);
+                }
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size / 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255, 250, 246, 0.9)";
+                ctx.fill();
+                ctx.restore();
+
+                p.y += p.speedY; p.x += p.speedX; p.angle += p.spin;
+                if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+            } else {
+                ctx.save();
+                p.opacity += p.glowSpeed;
+                if (p.opacity > 1 || p.opacity < 0.2) p.glowSpeed = -p.glowSpeed;
+
+                ctx.fillStyle = `rgba(223, 197, 179, ${p.opacity})`;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = "#dfc5b3";
+                
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y - p.size * 2);
+                ctx.quadraticCurveTo(p.x, p.y, p.x + p.size * 2, p.y);
+                ctx.quadraticCurveTo(p.x, p.y, p.x, p.y + p.size * 2);
+                ctx.quadraticCurveTo(p.x, p.y, p.x - p.size * 2, p.y);
+                ctx.quadraticCurveTo(p.x, p.y, p.x, p.y - p.size * 2);
+                ctx.fill();
+                ctx.restore();
+
+                p.y += p.speedY; p.x += p.speedX;
+                if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+            }
+        });
+
+        requestAnimationFrame(drawBackdrop);
+    }
+
+    function toggleTheme() {
+        const bodyAttr = document.body.getAttribute('data-theme');
+        if (bodyAttr === 'light') {
+            document.body.setAttribute('data-theme', 'dark');
+            currentThemeMode = "dark";
+        } else {
+            document.body.setAttribute('data-theme', 'light');
+            currentThemeMode = "light";
+        }
+        initParticles();
+    }
+
+    // --- DIARY UTILITIES ---
+    function saveData() {
+        const textInput = document.getElementById('jText').value.trim();
+        if(!textInput) return alert("Page cannot be empty.");
+
+        const newEntry = {
+            id: Date.now(),
+            date: document.getElementById('jDate').value || new Date().toISOString().split('T')[0],
+            mood: document.getElementById('moodSelect').value,
+            tag: document.getElementById('jTag').value.trim() || "General",
+            text: textInput
+        };
+
+        journalLogs.unshift(newEntry);
+        localStorage.setItem(`moona_logs_${currentScribe}`, JSON.stringify(journalLogs));
+        document.getElementById('jText').value = '';
+        alert("Entry written safely! 🌸");
+        
+        calculateMoodInsights();
+        showPanel('archives');
+    }
+
+    function logout() {
+        cozyAudio.pause();
+        currentScribe = "";
+        journalLogs = [];
+        customQuotes = [];
+        
+        document.getElementById('auth-view').style.display = 'flex';
+        document.getElementById('home-view').style.display = 'none';
+        document.getElementById('workspace').style.display = 'none';
+        document.getElementById('settingsContainer').style.display = 'none';
+        
+        document.body.style.justifyContent = 'center';
+        setAuthMode('login');
+    }
+
+    window.onload = function() {
+        document.getElementById('jDate').valueAsDate = new Date();
+        initParticles();
+        requestAnimationFrame(drawBackdrop);
+        setAuthMode('login');
+    }
+
+    window.onresize = function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function showPanel(id) {
+        document.getElementById('home-view').style.display = 'none';
+        document.getElementById('workspace').style.display = 'block';
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        
+        if(id === 'archives') renderArchives();
+        if(id === 'insights') calculateMoodInsights();
+    }
+    function goHome() {
+        document.getElementById('home-view').style.display = 'flex';
+        document.getElementById('workspace').style.display = 'none';
+    }
+    function renderArchives() {
+        const container = document.getElementById('archivesList');
+        if(journalLogs.length === 0) {
+            container.innerHTML = `<p style="font-style:italic; font-size:13px; text-align:center;">Empty archives.</p>`;
+            return;
+        }
+        container.innerHTML = journalLogs.map(e => `
+            <div class="entry-card">
+                <div style="font-size: 11px; color: var(--text-muted); font-weight:bold;">📅 ${e.date} | MOOD: ${e.mood}</div>
+                <p style="margin-top:10px; font-size:14px;">${e.text}</p>
+            </div>
+        `).join('');
+    }
+</script>
+</body>
+</html>            overflow: hidden !important;
         }
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
